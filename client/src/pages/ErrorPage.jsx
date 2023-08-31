@@ -21,8 +21,7 @@ const ErrorPage = () => {
 
   return (
     <Wrapper>
-      <pre>{error.message || error.statusText}</pre>
-      <Link to='/'>Retour à l&apos;accueil</Link>
+      <h3>Une erreur s&apos;est produite</h3>
     </Wrapper>
   );
 };

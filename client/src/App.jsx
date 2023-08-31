@@ -1,4 +1,7 @@
 import { createBrowserRouter, RouterProvider } from 'react-router-dom';
+// react query
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { ReactQueryDevtools } from '@tanstack/react-query-devtools';
 // layouts
 import { DashboardLayout, HomeLayout } from './layouts';
 // pages
@@ -6,7 +9,6 @@ import {
   AddJob,
   Admin,
   AllJobs,
-  DeleteJob,
   EditJob,
   ErrorPage,
   Landing,
@@ -15,6 +17,8 @@ import {
   Register,
   Stats
 } from './pages';
+// components
+import ErrorComponent from './components/ErrorComponent.jsx';
 
 //actions
 import { action as registerAction } from './pages/Register.jsx';
@@ -39,6 +43,14 @@ const checkDefaultTheme = () => {
 
 const isDarkThemeEnabled = checkDefaultTheme();
 
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      staleTime: 5 * 60 * 1000 // 5 minutes
+    }
+  }
+});
+
 const router = createBrowserRouter([
   {
     path: '/',
@@ -51,24 +63,47 @@ const router = createBrowserRouter([
         element: <Register />,
         action: registerAction
       },
-      { path: 'login', element: <Login />, action: loginAction },
+      { path: 'login', element: <Login />, action: loginAction(queryClient) },
       {
         path: 'dashboard',
-        element: <DashboardLayout isDarkThemeEnabled={isDarkThemeEnabled} />,
-        loader: dashboardLoader,
+        element: (
+          <DashboardLayout
+            isDarkThemeEnabled={isDarkThemeEnabled}
+            queryClient={queryClient}
+          />
+        ),
+        loader: dashboardLoader(queryClient),
         children: [
-          { index: true, element: <AddJob />, action: addJobAction },
-          { path: 'all-jobs', element: <AllJobs />, loader: alljobsLoader },
-          { path: 'stats', element: <Stats />, loader: statsLoader },
-          { path: 'profile', element: <Profile />, action: profileAction },
+          {
+            index: true,
+            element: <AddJob />,
+            action: addJobAction(queryClient)
+          },
+          {
+            path: 'all-jobs',
+            element: <AllJobs />,
+            loader: alljobsLoader(queryClient),
+            errorElement: <ErrorComponent />
+          },
+          {
+            path: 'stats',
+            element: <Stats />,
+            loader: statsLoader(queryClient),
+            errorElement: <ErrorComponent />
+          },
+          {
+            path: 'profile',
+            element: <Profile />,
+            action: profileAction(queryClient)
+          },
           { path: 'admin', element: <Admin />, loader: adminLoader },
           {
             path: 'edit-job/:id',
             element: <EditJob />,
-            action: editJobAction,
-            loader: editJobLoader
+            action: editJobAction(queryClient),
+            loader: editJobLoader(queryClient)
           },
-          { path: 'delete-job/:id', action: deleteJobAction }
+          { path: 'delete-job/:id', action: deleteJobAction(queryClient) }
         ]
       }
     ]
@@ -76,7 +111,12 @@ const router = createBrowserRouter([
 ]);
 
 const App = () => {
-  return <RouterProvider router={router} />;
+  return (
+    <QueryClientProvider client={queryClient}>
+      <RouterProvider router={router} />
+      <ReactQueryDevtools initialIsOpen={false} />
+    </QueryClientProvider>
+  );
 };
 
 export default App;
